@@ -1,0 +1,35 @@
+tables:
+  - name: orders
+    file: orders.csv           # CSV file in dags/data/
+    raw_table: orders_raw      # Raw table name in Snowflake
+    columns:
+       order_id: int
+       date: date
+       time: time
+
+  - name: order_details
+    file: order_details.csv
+    raw_table: order_details_raw
+    columns:
+       order_details_id: int
+       order_id: int
+       pizza_id: string 
+       quantity: int
+
+  - name: pizza
+    file: pizzas.csv
+    raw_table: pizza_raw
+    columns:
+       pizza_id: string
+       pizza_type_id: string
+       size: string
+       price: float
+
+  - name: pizza_types
+    file: pizza_types.csv
+    raw_table: pizza_types_raw
+    columns:
+       pizza_type_id: string
+       name: string
+       category: string
+       ingredients: string
