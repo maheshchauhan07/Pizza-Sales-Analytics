@@ -46,22 +46,17 @@ This project demonstrates both **Data Engineering and Data Analytics skills**, i
 The project follows a **layered modern data architecture** commonly used in production analytics systems.
 
 
-CSV Files
-│
-▼
-Airflow (Orchestration Layer)
-│
-▼
-Snowflake Staging Layer
-│
-▼
-Snowflake Data Mart (Star Schema)
-│
-▼
-SQL Analysis / EDA
-│
-▼
-Power BI Dashboard
+- CSV Files  
+  ↓  
+- Airflow (Orchestration Layer)  
+  ↓  
+- Snowflake Staging Layer  
+  ↓  
+- Snowflake Data Mart (Star Schema)  
+  ↓  
+- SQL Analysis / EDA  
+  ↓  
+- Power BI Dashboard
 
 
 ---
@@ -94,27 +89,7 @@ SQL queries are used to analyze patterns, validate metrics, and explore business
 
 ---
 
-# 📁 Project Structure
 
-
-pizza-sales-analytics
-│
-├── airflow_dags
-│ └── pizza_dag.py
-│
-├── sql
-│ └── pizza_analysis.sql
-│
-├── dashboard
-│ └── screenshots
-│
-├── report
-│ └── Pizza_Sales_Report.pdf
-│
-└── README.md
-
-
----
 
 # 📊 Data Warehouse Model
 
