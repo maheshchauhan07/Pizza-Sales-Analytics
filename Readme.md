@@ -5,24 +5,24 @@
 
 # 📌 Project Overview
 
-This project demonstrates a complete **end-to-end data pipeline and analytics workflow** built using **Pizza Sales data from 2016**.
+This project demonstrates a **fully implemented end-to-end data pipeline and analytics workflow** using **Pizza Sales data from 2016**.
 
-The objective of the project is to simulate a **real-world analytics engineering environment**, where raw data is ingested, transformed, validated, and visualized to generate actionable business insights.
+The objective is to simulate a **real-world analytics engineering environment**, where data is **ingested, processed across multiple layers, validated, and visualized**, generating actionable business insights.
 
 The project covers the full analytics lifecycle:
 
-- Raw data ingestion from CSV files  
-- Data warehouse modeling using a **Star Schema**  
+- Data ingestion from CSV files into a **raw layer**  
+- Transformation and staging in **Snowflake staging layer**  
+- Modeling into a **Star Schema data mart**  
 - Pipeline orchestration with **Apache Airflow**  
-- Data transformation and validation using **SQL**  
-- Interactive **Power BI dashboards**  
-- Business insight generation and reporting  
+- Data validation and exploratory analysis using **SQL**  
+- Interactive **Power BI dashboards** for business insights  
 
-This project demonstrates both **Data Engineering and Data Analytics skills**, including:
+This project demonstrates **hands-on Data Engineering and Analytics skills**, including:
 
-- ETL pipelines  
-- Data warehouse design  
-- Data quality validation  
+- ETL pipeline development  
+- Data warehouse design and modeling  
+- SQL-based data quality validation  
 - Business intelligence visualization  
 
 ---
@@ -32,10 +32,10 @@ This project demonstrates both **Data Engineering and Data Analytics skills**, i
 | Technology | Purpose |
 |-----------|--------|
 | Snowflake | Cloud Data Warehouse |
-| Apache Airflow | Workflow orchestration |
+| Apache Airflow | Workflow orchestration of raw → staging → mart layers |
 | Docker | Containerized Airflow environment |
 | Python | DAG creation & pipeline automation |
-| SQL | Data transformation & analysis |
+| SQL | Data transformation, EDA, and validation |
 | Power BI | Business intelligence dashboards |
 | Lucidchart | Data modeling & schema design |
 
@@ -43,7 +43,7 @@ This project demonstrates both **Data Engineering and Data Analytics skills**, i
 
 # 🏗️ Data Pipeline Architecture
 
-The project follows a **layered modern data architecture** commonly used in production analytics systems.
+The pipeline is implemented across **three layers** and orchestrated via Airflow:
 
 
 - CSV Files  
@@ -64,42 +64,50 @@ The project follows a **layered modern data architecture** commonly used in prod
 # ⚙️ Pipeline Flow
 
 ## Step 1 — Data Ingestion
-
-Raw pizza sales data is ingested from **CSV files** into the **Snowflake staging layer**.
+Raw pizza sales data is ingested from **CSV files** into the **Snowflake staging layer** using Airflow DAGs.
 
 ## Step 2 — Pipeline Orchestration
+**Apache Airflow DAGs** orchestrate the full pipeline from **raw → staging → data mart**, including **data validation, logging, and error handling**. Each step ensures the workflow is **robust and maintainable**.
 
-**Apache Airflow DAGs** automate the data pipeline including ingestion, transformations, and validations.
+## Step 3 — Data Transformation, Cleaning, and Validation
 
-## Step 3 — Data Transformation
+SQL transformations convert the staging data into structured **fact and dimension tables** in the data mart (Star Schema). After transformation, **SQL** is used to clean, validate, and explore the data.
 
-**SQL transformations** convert raw staging data into structured warehouse tables.
+🔹 Highlighted Skills:
+
+Airflow for orchestrating ETL pipelines
+
+SQL for data transformations and quality checks
+
+Data cleaning and validation 
+
+Exploratory Data Analysis (EDA) for business insights
+
+**Using YAML for Scalable Pipelines:**  
+To make the pipeline **scalable and maintainable**, table creation and insert statements are **abstracted into YAML configuration files**. The pipeline reads table definitions, column specifications, and insert logic from YAML files, allowing **easy schema changes, addition of new tables, or data sources** without modifying DAG code. This ensures the ETL workflow is **robust, reusable, and production-ready**.
 
 ## Step 4 — Data Warehouse
+A **Star Schema data mart** is implemented containing **fact and dimension tables**, optimized for analytics and BI workloads.
 
-A **Star Schema data mart** is created containing fact and dimension tables.
+## Step 5 — Exploratory Data Analysis & Validation
+After loading the data mart, **SQL queries were used for EDA and validation**, including:
 
-## Step 5 — Exploratory Data Analysis
-
-SQL queries are used to analyze patterns, validate metrics, and explore business trends.
+- Row count validation between layers  
+- Null value checks on critical columns  
+- Revenue calculation consistency  
+- Negative value checks for quantity and price  
+- Referential integrity validation between fact and dimension tables  
 
 ## Step 6 — Business Intelligence
+Power BI dashboards visualize key metrics and insights, enabling **interactive exploration of trends, product performance, and revenue analytics**.
 
-**Power BI dashboards** visualize key metrics and insights.
-
----
-
-
+ 
 
 # 📊 Data Warehouse Model
 
-The warehouse follows a **Star Schema**, optimized for analytical workloads and BI tools.
+The warehouse follows a **Star Schema**, optimized for analytics and BI.
 
----
-
-## ⭐ Fact Table
-
-### fact_table
+## ⭐ Fact Table — fact_table
 
 | Column | Description |
 |------|-------------|
@@ -114,9 +122,7 @@ The warehouse follows a **Star Schema**, optimized for analytical workloads and 
 
 ---
 
-## 📅 Dimension Table — Date
-
-### dim_date
+## 📅 Dimension Table — Date (dim_date)
 
 | Column | Description |
 |------|-------------|
@@ -132,9 +138,7 @@ The warehouse follows a **Star Schema**, optimized for analytical workloads and 
 
 ---
 
-## 🍕 Dimension Table — Pizza
-
-### dim_pizza
+## 🍕 Dimension Table — Pizza (dim_pizza)
 
 | Column | Description |
 |------|-------------|
@@ -149,15 +153,13 @@ The warehouse follows a **Star Schema**, optimized for analytical workloads and 
 
 # ✅ Data Quality Checks
 
-To ensure **high-quality analytical data**, several validation checks were implemented.
+- Row count validation between raw, staging, and mart layers  
+- Null checks on critical columns  
+- Revenue calculation consistency  
+- Negative value checks for quantity and price  
+- Referential integrity validation  
 
-- ✔ Row count validation between staging and fact tables  
-- ✔ Null value checks on critical columns  
-- ✔ Revenue calculation consistency validation  
-- ✔ Negative value checks for quantity and price  
-- ✔ Referential integrity validation between fact and dimension tables  
-
-These checks ensure **accurate and reliable analytics outputs**.
+These ensure **high-quality, reliable analytics outputs**.
 
 ---
 
@@ -177,79 +179,56 @@ These checks ensure **accurate and reliable analytics outputs**.
 
 ## 📈 Sales Trends
 
-Important patterns observed in the data:
-
-- Friday generates the **highest revenue**
-- July is the **best performing month**
+- Friday generates the **highest revenue**  
+- July is the **best performing month**  
 - Quarter 2 produces the **strongest revenue performance**
 
 ---
 
 ## 🍕 Product Performance
 
-Key product insights include:
-
-- Large pizzas contribute **~46% of total revenue**
-- **Thai Chicken Pizza** is the top revenue generating pizza
-- Revenue distribution is relatively balanced across products (no strict 80/20 rule)
+- Large pizzas contribute **~46% of total revenue**  
+- **Thai Chicken Pizza** is the top revenue generating pizza  
+- Revenue distribution is **balanced across products**  
 
 ---
 
 # 📊 Power BI Dashboard
 
-The Power BI dashboard contains **two analytical pages**.
-
----
-
 ## Page 1 — Sales Overview
-
-Features:
-
-- KPI summary cards
-- Revenue by month
-- Revenue by quarter
-- Revenue by day of week
-- Orders by hour
-
----
+- KPI summary cards  
+- Revenue by month, quarter, day of week  
+- Orders by hour  
 
 ## Page 2 — Product Performance
-
-Features:
-
-- Revenue by pizza category
-- Revenue by pizza size
-- Top 10 pizzas by revenue
-- Bottom 10 pizzas by revenue
+- Revenue by pizza category and size  
+- Top 10 pizzas by revenue  
+- Bottom 10 pizzas by revenue  
 
 ---
 
 # 💡 Business Recommendations
 
-Based on the analysis, the following strategies could improve business performance:
-
-- 📌 Introduce **weekend promotions** to increase non-weekday sales
-- 📌 Expand **chicken pizza offerings** due to strong demand
-- 📌 Evaluate removal of **low-performing XL / XXL pizza sizes**
-- 📌 Launch **Q4 holiday marketing campaigns**
-- 📌 Promote **lunchtime deals around 12 PM**
-- 📌 Develop a **signature "hero" pizza product**
+- 📌 Introduce **weekend promotions**  
+- 📌 Expand **chicken pizza offerings**  
+- 📌 Remove **low-performing XL / XXL pizza sizes**  
+- 📌 Launch **Q4 holiday marketing campaigns**  
+- 📌 Promote **lunchtime deals around 12 PM**  
+- 📌 Develop a **signature hero pizza product**
 
 ---
 
 # 📄 Business Report
 
-A detailed business report summarizing insights and recommendations is included in the repository.
+Detailed report included:
 
-**File:**  
-`Pizza_Sales_Performance_Report_2016.pdf`
+**Pizza_Sales_Performance_Report_2016.pdf**
 
 ---
 
 # 👤 Author
 
-**Mahesh Chauhan**
-
+**Mahesh Chauhan**  
 Data Analyst | Data Engineering Enthusiast  
 
 📍 Berlin, Germany  
