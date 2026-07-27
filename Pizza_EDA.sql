@@ -8,7 +8,7 @@ show schemas;
 
 show tables ;
 
-drop table if exists  pizza.mart.fact_sales;
+drop table if exists  pizza.mart.fact_table;
 
 
 select * from dim_date;
@@ -35,7 +35,7 @@ sum(case when pizza_key is null then 1 else 0 end ) as pizza_key_null,
 sum(case when order_id is null then 1 else 0 end ) as order_id_null,
 sum(case when quantity is null then 1 else 0 end ) as quantity_null,
 sum(case when price is null then 1 else 0 end ) as price_null,
-sum(case when revenue is null then 1 else 0 end ) as revenue_null,
+sum(case when revenue is null then 1 else 0 end ) as revenue_null
 
 from pizza.mart.fact_table;
 
@@ -45,7 +45,7 @@ from pizza.mart.fact_table;
 select count(*) as total_rows,
 sum(case when quantity <= 0 then 1 else 0 end) as chk_quan,
 sum(case when price <= 0 then 1 else 0 end) as chk_price,
-sum(case when revenue <= 0 then 1 else 0 end) as chk_revenue,
+sum(case when revenue <= 0 then 1 else 0 end) as chk_revenue
 from pizza.mart.fact_table;
 
 -- now i will check if the revenue column is fine or not 
