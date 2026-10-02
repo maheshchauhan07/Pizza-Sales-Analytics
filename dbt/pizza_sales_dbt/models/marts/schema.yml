@@ -1,0 +1,43 @@
+version: 2
+
+models:
+  - name: dim_date
+    columns:
+      - name: date_key
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_pizza
+    columns:
+      - name: pizza_key
+        tests:
+          - unique
+          - not_null
+
+  - name: fact_table
+    columns:
+      - name: sales_key
+        tests:
+          - unique
+          - not_null
+      - name: date_key
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
+      - name: pizza_key
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_pizza')
+              field: pizza_key
+      - name: quantity
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+      - name: price
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0

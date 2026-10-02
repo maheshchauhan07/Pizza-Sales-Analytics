@@ -1,0 +1,11 @@
+version: 2
+
+sources:
+  - name: raw
+    database: pizza
+    schema: PUBLIC
+    tables:
+      - name: orders_raw
+      - name: order_details_raw
+      - name: pizza_raw
+      - name: pizza_types_raw

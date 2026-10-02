@@ -17,7 +17,7 @@ STAGING_SCHEMA = "STAGING"
 STAGE_NAME = "pizza"
 WAREHOUSE_NAME = "my_load_wh"
 
-# -------------------------------
+# ------------------------
 # LOAD METADATA YAML
 # -------------------------------
 with open(CONFIG_PATH, "r") as f:
@@ -154,147 +154,14 @@ with DAG(
         load_tasks.append(load_task)
 
     # -------------------------------
-    # 6 Create STAGING Tables with Type Casting
+    # 6 Run dbt to build STAGING + MART
     # -------------------------------
-    create_staging_schema = SQLExecuteQueryOperator(
-        task_id="create_staging_schema",
-        conn_id="snowflake_default",
-        sql=f"CREATE SCHEMA IF NOT EXISTS {DB_NAME}.{STAGING_SCHEMA};",
-        autocommit=True,
+    from airflow.operators.bash import BashOperator
+
+    run_dbt = BashOperator(
+        task_id="run_dbt",
+        bash_command="cd /opt/airflow/dbt/pizza_sales_dbt && dbt run --profiles-dir . && dbt test --profiles-dir .",
     )
 
-    # All load tasks must finish before creating staging schema
     for task in load_tasks:
-        task >> create_staging_schema
-
-    staging_tasks = []
-
-    for table in tables:
-        table_name = table["raw_table"]
-        column_types = table["columns"]
-
-        staging_cols_sql = []
-
-        for col_name, col_type in column_types.items():
-            if col_type.upper() == "STRING":
-                staging_cols_sql.append(f"TRIM({col_name}) AS {col_name}")
-            elif col_type.upper() == "INT":
-                staging_cols_sql.append(f"CAST({col_name} AS INT) AS {col_name}")
-            elif col_type.upper() == "FLOAT":
-                staging_cols_sql.append(f"CAST({col_name} AS FLOAT) AS {col_name}")
-            elif col_type.upper() == "DATE":
-                staging_cols_sql.append(f"TO_DATE({col_name}) AS {col_name}")
-            else:
-                staging_cols_sql.append(col_name)  # fallback
-
-        cols_sql = ",\n".join(staging_cols_sql)
-
-        staging_sql = f"""
-        CREATE OR REPLACE TABLE {DB_NAME}.{STAGING_SCHEMA}.{table_name}_stg AS
-        SELECT {cols_sql}
-        FROM {DB_NAME}.{RAW_SCHEMA}.{table_name};
-        """
-
-        staging_task = SQLExecuteQueryOperator(
-            task_id=f"stg_{table_name}",
-            conn_id="snowflake_default",
-            sql=staging_sql,
-            autocommit=True,
-        )
-
-        create_staging_schema >> staging_task
-        staging_tasks.append(staging_task)
-
-
-
-
-# creating data mart final step 
-
-    create_mart_schema = SQLExecuteQueryOperator(
-    task_id="create_mart_schema",
-    conn_id="snowflake_default",
-    sql=f"CREATE SCHEMA IF NOT EXISTS {DB_NAME}.MART;",
-    autocommit=True,
-    )
-
-    for task in staging_tasks:
-        task >> create_mart_schema
-
-
-    create_dim_date = SQLExecuteQueryOperator(
-    task_id="create_dim_date",
-    conn_id="snowflake_default",
-    sql=f"""
-    CREATE OR REPLACE TABLE {DB_NAME}.MART.DIM_DATE AS
-    SELECT DISTINCT
-        TO_NUMBER(TO_CHAR(date, 'YYYYMMDD')) AS date_key,
-        date AS full_date,
-        time as full_time,
-        YEAR(date) AS year,
-        MONTH(date) AS month,
-        TO_CHAR(date, 'MMMM') AS month_name,
-        DAY(date) AS day,
-        TO_CHAR(date, 'DY') AS day_name,
-        QUARTER(date) AS quarter,
-        CASE WHEN DAYOFWEEK(date) IN (1,7) THEN TRUE ELSE FALSE END AS is_weekend
-    FROM {DB_NAME}.{STAGING_SCHEMA}.orders_raw_stg;
-    """,
-    autocommit=True,
-    )
-
-    create_mart_schema >> create_dim_date
-
-
-    create_dim_pizza = SQLExecuteQueryOperator(
-    task_id="create_dim_pizza",
-    conn_id="snowflake_default",
-    sql=f"""
-    CREATE OR REPLACE TABLE {DB_NAME}.MART.DIM_PIZZA AS
-    SELECT
-        ROW_NUMBER() OVER (ORDER BY p.pizza_id) AS pizza_key,
-        p.pizza_id,
-        pt.name AS pizza_name,
-        pt.category,
-        p.size,
-        pt.ingredients
-    FROM {DB_NAME}.{STAGING_SCHEMA}.pizza_raw_stg p
-    JOIN {DB_NAME}.{STAGING_SCHEMA}.pizza_types_raw_stg pt
-        ON p.pizza_type_id = pt.pizza_type_id;
-    """,
-    autocommit=True,
-    )
-
-    create_mart_schema >> create_dim_pizza
-
-
-    create_fact_sales = SQLExecuteQueryOperator(
-    task_id="create_fact_sales",
-    conn_id="snowflake_default",
-    sql=f"""
-    CREATE OR REPLACE TABLE {DB_NAME}.MART.FACT_table AS
-    SELECT
-        ROW_NUMBER() OVER (ORDER BY od.order_details_id) AS sales_key,
-        TO_NUMBER(TO_CHAR(o.date, 'YYYYMMDD')) AS date_key,
-        dp.pizza_key,
-        od.order_id,
-        od.quantity,
-        pz.price,
-        od.quantity * pz.price AS revenue
-    FROM {DB_NAME}.{STAGING_SCHEMA}.order_details_raw_stg od
-    JOIN {DB_NAME}.{STAGING_SCHEMA}.orders_raw_stg o
-        ON od.order_id = o.order_id
-    JOIN {DB_NAME}.{STAGING_SCHEMA}.pizza_raw_stg pz   
-    ON od.pizza_id = pz.pizza_id
-    JOIN {DB_NAME}.MART.DIM_PIZZA dp
-        ON od.pizza_id = dp.pizza_id;
-    """,
-    autocommit=True,
-    )
-
-    create_dim_date >> create_fact_sales
-    create_dim_pizza >> create_fact_sales
-
-
-
-
-    
+        task >> run_dbt

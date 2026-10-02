@@ -205,3 +205,11 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# dbt
+dbt/pizza_sales_dbt/profiles.yml
+dbt/pizza_sales_dbt/dbt_packages/
+dbt/pizza_sales_dbt/logs/
+
+# Airflow
+logs/
