@@ -160,8 +160,7 @@ with DAG(
 
     run_dbt = BashOperator(
         task_id="run_dbt",
-        bash_command="cd /opt/airflow/dbt/pizza_sales_dbt && dbt run --profiles-dir . && dbt test --profiles-dir .",
-    )
+        bash_command="cd /opt/airflow/dbt/pizza_sales_dbt && dbt deps --profiles-dir . && dbt run --profiles-dir . && dbt test --profiles-dir .",    )
 
     for task in load_tasks:
         task >> run_dbt

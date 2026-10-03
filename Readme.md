@@ -54,7 +54,11 @@ Airflow (Orchestration Layer — raw ingestion)
 Snowflake RAW Layer
    ↓
 dbt (triggered by Airflow)
-   ├── Staging models (clean, cast, trim)
+   └── Staging models (clean, cast, trim)
+   ↓
+Snowflake STAGING Layer
+   ↓
+dbt
    ├── Dimension models (DIM_DATE, DIM_PIZZA)
    ├── Fact model (FACT_table)
    └── 12 automated dbt tests
@@ -74,10 +78,10 @@ Airflow and dbt run inside Docker containers built from a custom image, so the e
 Raw pizza sales data is ingested from **CSV files** into the **Snowflake RAW layer** using an Airflow DAG. Table creation is dynamically generated from a YAML config (`config/tables.yml`), so adding a new table or column requires no DAG code changes.
 
 ## Step 2 — Pipeline Orchestration
-The **Apache Airflow DAG** handles session setup, stage creation, dynamic RAW table creation, and loading CSVs via `PUT` + `COPY INTO`. Once ingestion completes, Airflow triggers a single `run_dbt` task that hands off all transformation work to dbt.
+The **Apache Airflow DAG** handles session setup, stage creation, dynamic RAW table creation, and loading CSVs via `PUT` + `COPY INTO`. Once ingestion completes, Airflow triggers a single `run_dbt` task that installs dbt's package dependencies (`dbt deps`), then hands off all transformation work to dbt (`dbt run` + `dbt test`).
 
 ## Step 3 — Transformation via dbt
-dbt builds the **STAGING** layer (type casting, trimming, cleaning) on top of the RAW tables, then builds the **MART** layer (star schema) on top of staging — all defined as version-controlled `.sql` model files instead of inline SQL strings.
+dbt builds the **STAGING** layer (type casting, trimming, cleaning) on top of the RAW tables, then builds the **MART** layer (star schema) on top of staging — all defined as version-controlled `.sql` model files instead of inline SQL strings. A custom `generate_schema_name` macro keeps STAGING and MART as genuinely separate Snowflake schemas.
 
 **Why dbt instead of raw SQL in the DAG:**
 - Transformation logic is modular, testable, and lives in its own layer
@@ -99,6 +103,8 @@ Instead of manual, after-the-fact SQL validation queries, the pipeline runs **12
 
 **A concrete example of why this matters:** during development, dbt's `unique` test on `DIM_DATE.date_key` caught 358 duplicate rows — a bug inherited from the original hand-written SQL, where `DISTINCT` was applied across a column (`time`) that varies per order, silently breaking the one-row-per-date guarantee. The original raw-SQL version of this pipeline had this same bug with no test to catch it. Fixing the model and re-running the test suite confirmed the fix immediately.
 
+That same bug also silently corrupted the weekday/weekend revenue split reported in earlier versions of this project's report and dashboard (the old figures were computed before the `is_weekend` fix landed and were never refreshed). The current numbers in this README, the report, and the dashboard reflect the corrected data: weekends earn close to their proportional share of the week, not the dramatic shortfall originally reported — a good illustration of why re-validating downstream outputs after a data fix matters just as much as the fix itself.
+
 ## Step 6 — Business Intelligence
 Power BI dashboards visualize key metrics and insights, enabling **interactive exploration of trends, product performance, and revenue analytics**.
 
@@ -119,6 +125,7 @@ The warehouse follows a **Star Schema**, optimized for analytics and BI.
 | quantity   | Number of pizzas sold    |
 | price      | Pizza price              |
 | revenue    | quantity × price         |
+| full_time  | Order time                |
 
 ## 📅 Dimension Table — Date (dim_date)
 
@@ -170,11 +177,14 @@ These replace manual, point-in-time SQL validation with checks that run automati
 | Total Pizzas Sold         | 49,574   |
 | Average Pizzas per Order  | ~2       |
 | Average Order Value       | ~$38     |
+| Weekday Revenue           | $595,474 (72.8%) |
+| Weekend Revenue           | $222,386 (27.2%) |
 
 ## 📈 Sales Trends
 - Friday generates the **highest revenue**
 - July is the **best performing month**
 - Quarter 2 produces the **strongest revenue performance**
+- Weekends earn close to their proportional share of the week (2 of 7 days ≈ 28.6% expected, actual 27.2%) — Saturday is the 3rd-best day overall, while Sunday is the weakest day
 
 ## 🍕 Product Performance
 - Large pizzas contribute **~46% of total revenue**
@@ -184,6 +194,8 @@ These replace manual, point-in-time SQL validation with checks that run automati
 ---
 
 # 📊 Power BI Dashboard
+
+See [`pizza_dashboard_pictures.pdf`](./pizza_dashboard_pictures.pdf) for dashboard screenshots, or open [`pizza_dashboard.pbix`](./pizza_dashboard.pbix) directly in Power BI.
 
 ## Page 1 — Sales Overview
 - KPI summary cards
@@ -199,7 +211,7 @@ These replace manual, point-in-time SQL validation with checks that run automati
 
 # 💡 Business Recommendations
 
-- 📌 Introduce **weekend promotions**
+- 📌 Introduce a **Sunday-specific promotion** (Sunday is the weakest day; the weekend overall is close to its fair share of weekly revenue)
 - 📌 Expand **chicken pizza offerings**
 - 📌 Remove **low-performing XL / XXL pizza sizes**
 - 📌 Launch **Q4 holiday marketing campaigns**
@@ -236,13 +248,17 @@ docker-compose up -d
 # with your account, username, password/token, warehouse, and role.
 
 # 8. Trigger the raw_to_staging_to_mart DAG
+# (this runs ingestion, then dbt deps / dbt run / dbt test automatically)
 ```
 
 ---
 
-# 📄 Business Report
+# 📄 Additional Documentation
 
-Detailed report included: **Pizza_Sales_Performance_Report_2015_.pdf**
+- [`Pizza_Sales_Performance_Report_2015_.pdf`](./Pizza_Sales_Performance_Report_2015_.pdf) — full business report
+- [`Pizza_ERD.pdf`](./Pizza_ERD.pdf) — entity relationship diagram
+- [`Pizza_data_model.pdf`](./Pizza_data_model.pdf) — data model documentation
+- [`pizza_dashboard_pictures.pdf`](./pizza_dashboard_pictures.pdf) — Power BI dashboard screenshots
 
 ---
 
