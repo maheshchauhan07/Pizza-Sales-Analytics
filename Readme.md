@@ -61,7 +61,7 @@ Snowflake STAGING Layer
 dbt
    ├── Dimension models (DIM_DATE, DIM_PIZZA)
    ├── Fact model (FACT_table)
-   └── 12 automated dbt tests
+   └── 13 automated dbt tests
    ↓
 Snowflake MART Layer (Star Schema)
    ↓
@@ -78,7 +78,7 @@ Airflow and dbt run inside Docker containers built from a custom image, so the e
 Raw pizza sales data is ingested from **CSV files** into the **Snowflake RAW layer** using an Airflow DAG. Table creation is dynamically generated from a YAML config (`config/tables.yml`), so adding a new table or column requires no DAG code changes.
 
 ## Step 2 — Pipeline Orchestration
-The **Apache Airflow DAG** handles session setup, stage creation, dynamic RAW table creation, and loading CSVs via `PUT` + `COPY INTO`. Once ingestion completes, Airflow triggers a single `run_dbt` task that installs dbt's package dependencies (`dbt deps`), then hands off all transformation work to dbt (`dbt run` + `dbt test`).
+The **Apache Airflow DAG** handles session setup, stage creation, dynamic RAW table creation, and loading CSVs via `PUT` + `COPY INTO`. Loads use `ON_ERROR = ABORT_STATEMENT`, so a malformed CSV row fails the task loudly instead of being silently skipped. Once ingestion completes, Airflow triggers a single `run_dbt` task that installs dbt's package dependencies (`dbt deps`), then hands off all transformation work to dbt (`dbt run` + `dbt test`).
 
 ## Step 3 — Transformation via dbt
 dbt builds the **STAGING** layer (type casting, trimming, cleaning) on top of the RAW tables, then builds the **MART** layer (star schema) on top of staging — all defined as version-controlled `.sql` model files instead of inline SQL strings. A custom `generate_schema_name` macro keeps STAGING and MART as genuinely separate Snowflake schemas.
@@ -92,13 +92,14 @@ dbt builds the **STAGING** layer (type casting, trimming, cleaning) on top of th
 A **Star Schema data mart** is implemented containing one fact table and two dimension tables, optimized for analytics and BI workloads.
 
 ## Step 5 — Automated Data Quality Testing
-Instead of manual, after-the-fact SQL validation queries, the pipeline runs **12 automated dbt tests** on every execution:
+Instead of manual, after-the-fact SQL validation queries, the pipeline runs **13 automated dbt tests** on every execution:
 
 | Category | Tests |
 |---|---|
 | Uniqueness | `date_key`, `pizza_key`, `sales_key` are each unique |
 | Completeness | Critical columns (`date_key`, `pizza_key`, `sales_key`) are never null |
 | Referential integrity | Every `FACT_table` row correctly references an existing `DIM_DATE` and `DIM_PIZZA` row |
+| Row-count completeness | `FACT_table` has exactly as many rows as `stg_order_details`, so no order lines are silently dropped by joins |
 | Value sanity | `quantity` and `price` are never negative |
 
 **A concrete example of why this matters:** during development, dbt's `unique` test on `DIM_DATE.date_key` caught 358 duplicate rows — a bug inherited from the original hand-written SQL, where `DISTINCT` was applied across a column (`time`) that varies per order, silently breaking the one-row-per-date guarantee. The original raw-SQL version of this pipeline had this same bug with no test to catch it. Fixing the model and re-running the test suite confirmed the fix immediately.
@@ -125,41 +126,42 @@ The warehouse follows a **Star Schema**, optimized for analytics and BI.
 | quantity   | Number of pizzas sold    |
 | price      | Pizza price              |
 | revenue    | quantity × price         |
-| full_time  | Order time                |
+| full_time  | Order time               |
 
 ## 📅 Dimension Table — Date (dim_date)
 
 | Column      | Description       |
 | ----------- | ----------------- |
 | date_key    | Primary Key       |
-| full_date   | Calendar date      |
-| year        | Year               |
-| month       | Month number       |
-| month_name  | Month name         |
-| day         | Day number         |
-| day_name    | Name of day        |
-| quarter     | Quarter            |
-| is_weekend  | Weekend indicator  |
+| full_date   | Calendar date     |
+| year        | Year              |
+| month       | Month number      |
+| month_name  | Month name        |
+| day         | Day number        |
+| day_name    | Name of day       |
+| quarter     | Quarter           |
+| is_weekend  | Weekend indicator |
 
 ## 🍕 Dimension Table — Pizza (dim_pizza)
 
 | Column      | Description       |
 | ----------- | ----------------- |
 | pizza_key   | Primary Key       |
-| pizza_id    | Pizza identifier   |
-| pizza_name  | Pizza name         |
-| category    | Pizza category     |
-| size        | Pizza size         |
-| ingredients | Pizza ingredients  |
+| pizza_id    | Pizza identifier  |
+| pizza_name  | Pizza name        |
+| category    | Pizza category    |
+| size        | Pizza size        |
+| ingredients | Pizza ingredients |
 
 ---
 
 # ✅ Data Quality Checks
 
-12 automated dbt tests run on every pipeline execution:
+13 automated dbt tests run on every pipeline execution:
 - Uniqueness checks on all primary keys
 - Not-null checks on critical columns
 - Referential integrity between fact and dimension tables
+- Row-count check between staging and the fact table
 - Non-negative value checks on quantity and price
 
 These replace manual, point-in-time SQL validation with checks that run automatically, every time, and fail the pipeline loudly if data quality regresses.
@@ -170,15 +172,15 @@ These replace manual, point-in-time SQL validation with checks that run automati
 
 ## 📊 Business Metrics
 
-| Metric                   | Value    |
-| ------------------------ | -------- |
-| Total Revenue            | $817,860 |
-| Total Orders              | 21,350   |
-| Total Pizzas Sold         | 49,574   |
-| Average Pizzas per Order  | ~2       |
-| Average Order Value       | ~$38     |
-| Weekday Revenue           | $595,474 (72.8%) |
-| Weekend Revenue           | $222,386 (27.2%) |
+| Metric                   | Value            |
+| ------------------------ | ---------------- |
+| Total Revenue            | $817,860         |
+| Total Orders             | 21,350           |
+| Total Pizzas Sold        | 49,574           |
+| Average Pizzas per Order | ~2               |
+| Average Order Value      | ~$38             |
+| Weekday Revenue          | $595,474 (72.8%) |
+| Weekend Revenue          | $222,386 (27.2%) |
 
 ## 📈 Sales Trends
 - Friday generates the **highest revenue**

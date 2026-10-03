@@ -138,9 +138,9 @@ with DAG(
             SKIP_HEADER = 1
             FIELD_OPTIONALLY_ENCLOSED_BY = '"'
             TRIM_SPACE = TRUE
-            ENCODING = 'ISO-8859-1'
+            ENCODING = 'WINDOWS1252'
         )
-        ON_ERROR = CONTINUE;
+        ON_ERROR = ABORT_STATEMENT;
         """
 
         load_task = SQLExecuteQueryOperator(

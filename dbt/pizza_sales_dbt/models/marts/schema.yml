@@ -16,6 +16,9 @@ models:
           - not_null
 
   - name: fact_table
+    tests:
+      - dbt_utils.equal_rowcount:
+          compare_model: ref('stg_order_details')
     columns:
       - name: sales_key
         tests:
