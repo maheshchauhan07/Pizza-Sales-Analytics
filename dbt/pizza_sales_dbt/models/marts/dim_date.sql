@@ -7,5 +7,5 @@ SELECT DISTINCT
     DAY(date) AS day,
     TO_CHAR(date, 'DY') AS day_name,
     QUARTER(date) AS quarter,
-    CASE WHEN DAYOFWEEK(date) IN (1,7) THEN TRUE ELSE FALSE END AS is_weekend
+    CASE WHEN DAYOFWEEKISO(date) IN (6,7) THEN TRUE ELSE FALSE END AS is_weekend
 FROM {{ ref('stg_orders') }}

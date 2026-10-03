@@ -1,0 +1,13 @@
+pizza_sales_dbt:
+  target: dev
+  outputs:
+    dev:
+      type: snowflake
+      account: YOUR_ACCOUNT_IDENTIFIER
+      user: YOUR_USERNAME
+      password: YOUR_PAT_OR_PASSWORD
+      role: ACCOUNTADMIN
+      warehouse: COMPUTE_WH
+      database: pizza
+      schema: MART
+      threads: 4

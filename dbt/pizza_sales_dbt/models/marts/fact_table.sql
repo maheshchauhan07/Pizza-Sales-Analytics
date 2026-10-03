@@ -5,7 +5,8 @@ SELECT
     od.order_id,
     od.quantity,
     pz.price,
-    od.quantity * pz.price AS revenue
+    od.quantity * pz.price AS revenue,
+    o.time AS full_time
 FROM {{ ref('stg_order_details') }} od
 JOIN {{ ref('stg_orders') }} o
     ON od.order_id = o.order_id
