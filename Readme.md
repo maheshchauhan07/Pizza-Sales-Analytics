@@ -5,7 +5,7 @@
 
 # 📌 Project Overview
 
-This project demonstrates a **fully implemented end-to-end data pipeline and analytics workflow** using **Pizza Sales data from 2016**.
+This project demonstrates a **fully implemented end-to-end data pipeline and analytics workflow** using **Pizza Sales data from 2015**.
 
 The objective is to simulate a **real-world analytics engineering environment**, where data is **ingested, processed across multiple layers, validated with automated tests, and visualized**, generating actionable business insights.
 
@@ -242,7 +242,7 @@ docker-compose up -d
 
 # 📄 Business Report
 
-Detailed report included: **Pizza_Sales_Performance_Report_2016_.pdf**
+Detailed report included: **Pizza_Sales_Performance_Report_2015_.pdf**
 
 ---
 
