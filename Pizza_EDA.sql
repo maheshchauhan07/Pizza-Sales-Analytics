@@ -23,8 +23,7 @@ describe table pizza.mart.fact_table;
 
 select count(*) from pizza.mart.fact_table;
 
-select count(*) from pizza.staging.order_details_raw_stg;
-
+select count(*) from pizza.staging.stg_order_details;
 
 --  checking nulls in fact table 
 
